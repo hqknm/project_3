@@ -1,0 +1,58 @@
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+import time
+import os
+
+
+def scrape_steam_games(num_pages=3):
+    # Создаем папку для сохранения
+    os.makedirs('data_scraping', exist_ok=True)
+
+    base_url = "https://store.steampowered.com/search/?ignore_preferences=1&page="
+    games_data = []
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
+
+    for page in range(1, num_pages + 1):
+        url = base_url + str(page)
+        try:
+            response = requests.get(url, headers=headers)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.text, 'html.parser')
+
+            for game in soup.select('.search_result_row'):
+                name = game.select_one('.title').text.strip() if game.select_one('.title') else 'No name'
+
+                price_element = game.select_one('.search_price')
+                if price_element:
+                    price = price_element.text.strip().replace('\r\n', '').replace('\t', '')
+                else:
+                    price = 'Free or N/A'
+
+                release_date = game.select_one('.search_released').text.strip() if game.select_one(
+                    '.search_released') else 'N/A'
+                discount = game.select_one('.search_discount span')
+                discount = discount.text.strip() if discount else '0%'
+
+                games_data.append({
+                    'game_name': name,
+                    'price': price,
+                    'release_date': release_date,
+                    'discount': discount
+                })
+
+            time.sleep(5)
+
+        except Exception as e:
+            print(f"Ошибка при обработке страницы {page}: {e}")
+            continue
+
+    df = pd.DataFrame(games_data)
+    df.to_csv('data_scraping/raw_data.csv', index=False)
+    print(f"Собрано {len(games_data)} игр. Данные сохранены в data_scraping/raw_data.csv")
+
+
+if __name__ == "__main__":
+    scrape_steam_games(num_pages=2)
