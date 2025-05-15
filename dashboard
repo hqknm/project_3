@@ -1,0 +1,17 @@
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+
+# Создаем тестовые данные (если у вас нет CSV)
+np.random.seed(42)
+data = {'price_USD': np.random.normal(30, 15, 1000)}
+df = pd.DataFrame(data)
+df['price_USD'] = df['price_USD'].clip(0, 100)  # Ограничиваем цены 0-100$
+
+# Визуализация
+fig, ax = plt.subplots(figsize=(10,5))
+ax.hist(df['price_USD'], bins=20, edgecolor='black')
+ax.set_title('Распределение цен игр в Steam')
+ax.set_xlabel('Цена ($)')
+ax.set_ylabel('Количество игр')
+plt.tight_layout()
